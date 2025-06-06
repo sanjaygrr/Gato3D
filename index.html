@@ -5,86 +5,126 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tic-Tac-Toe 3D</title>
     <style>
-        body {
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        
+        * {
             margin: 0;
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: white;
-            overflow: hidden;
+            padding: 0;
+            box-sizing: border-box;
         }
         
-        #container {
-            text-align: center;
-            width: 100%;
-            max-width: 900px;
+        body {
+            font-family: 'Orbitron', monospace;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
         }
         
         #gameCanvas {
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            cursor: pointer;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            text-align: center;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            font-weight: 900;
+            letter-spacing: 0.1em;
+            background: linear-gradient(45deg, #00ffff, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
         }
         
         #info {
-            margin-top: 20px;
-            font-size: 20px;
-        }
-        
-        #controls {
-            margin-top: 20px;
-        }
-        
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 2px solid white;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin: 0 5px;
-        }
-        
-        button:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(1.05);
+            font-size: 1.2em;
+            color: #00ffff;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+            margin-bottom: 10px;
         }
         
         #winner {
-            font-size: 24px;
-            font-weight: bold;
-            margin-top: 20px;
-            color: #4CAF50;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-            min-height: 30px;
+            font-size: 1.8em;
+            font-weight: 700;
+            height: 40px;
+            animation: pulse 1s infinite;
         }
         
-        .instructions {
-            margin-top: 20px;
-            font-size: 14px;
-            opacity: 0.8;
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            pointer-events: all;
+            z-index: 10;
+        }
+        
+        button {
+            padding: 12px 25px;
+            font-family: 'Orbitron', monospace;
+            font-size: 12px;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.1);
+            color: #00ffff;
+            border: 2px solid #00ffff;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            backdrop-filter: blur(10px);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 255, 255, 0.5);
+            background: rgba(0, 255, 255, 0.2);
+        }
+        
+        .player-x {
+            color: #ff00ff;
+            text-shadow: 0 0 10px rgba(255, 0, 255, 0.8);
+        }
+        
+        .player-o {
+            color: #00ff00;
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
         }
     </style>
 </head>
 <body>
-    <div id="container">
-        <h1>Tic-Tac-Toe 3D</h1>
-        <div id="gameCanvas"></div>
-        <div id="info">Turno: Jugador X</div>
+    <canvas id="gameCanvas"></canvas>
+    <div id="ui">
+        <h1>TIC-TAC-TOE 3D</h1>
+        <div id="info">PLAYER <span class="player-x">X</span> TURN</div>
         <div id="winner"></div>
-        <div id="controls">
-            <button onclick="resetGame()">Nuevo Juego</button>
-            <button onclick="toggleRotation()">Pausar/Reanudar Rotación</button>
-        </div>
-        <div class="instructions">
-            Haz clic en cualquier cubo para colocar tu marca. Forma una línea de 3 para ganar.
-        </div>
+    </div>
+    <div id="controls">
+        <button onclick="resetGame()">NEW GAME</button>
+        <button onclick="toggleRotation()">ROTATION</button>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -110,37 +150,47 @@
         }
         
         function init() {
-            // Crear el div contenedor del canvas
-            const container = document.getElementById('gameCanvas');
-            
             // Escena
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x0a0a0a);
             
             // Cámara
-            const aspect = window.innerWidth / window.innerHeight;
-            camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
-            camera.position.set(6, 6, 6);
+            camera = new THREE.PerspectiveCamera(
+                75, 
+                window.innerWidth / window.innerHeight, 
+                0.1, 
+                1000
+            );
+            camera.position.set(6, 4, 6);
             camera.lookAt(0, 0, 0);
             
             // Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(800, 600);
-            renderer.shadowMap.enabled = true;
-            container.appendChild(renderer.domElement);
+            const canvas = document.getElementById('gameCanvas');
+            renderer = new THREE.WebGLRenderer({ 
+                canvas: canvas,
+                antialias: true
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setClearColor(0x000000);
             
             // Luces
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
             scene.add(ambientLight);
             
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
-            directionalLight.position.set(10, 10, 5);
-            directionalLight.castShadow = true;
-            scene.add(directionalLight);
+            // Luz cyan
+            const cyanLight = new THREE.PointLight(0x00ffff, 1, 20);
+            cyanLight.position.set(5, 5, 5);
+            scene.add(cyanLight);
             
-            const pointLight = new THREE.PointLight(0xffffff, 0.4);
-            pointLight.position.set(-5, -5, -5);
-            scene.add(pointLight);
+            // Luz magenta
+            const magentaLight = new THREE.PointLight(0xff00ff, 0.8, 20);
+            magentaLight.position.set(-5, -5, -5);
+            scene.add(magentaLight);
+            
+            // Luz verde
+            const greenLight = new THREE.PointLight(0x00ff00, 0.6, 20);
+            greenLight.position.set(0, 8, 0);
+            scene.add(greenLight);
             
             // Grupo para el cubo
             cubeGroup = new THREE.Group();
@@ -158,43 +208,50 @@
             renderer.domElement.addEventListener('mousemove', onMouseMove);
             window.addEventListener('resize', onWindowResize);
             
+            // Iniciar animación
             animate();
         }
         
         function createCube() {
-            const cellGeometry = new THREE.BoxGeometry(0.9, 0.9, 0.9);
+            const cellSize = 0.8;
+            const spacing = 1.2;
             
             for (let x = 0; x < 3; x++) {
                 for (let y = 0; y < 3; y++) {
                     for (let z = 0; z < 3; z++) {
-                        // Material único para cada celda
-                        const cellMaterial = new THREE.MeshPhongMaterial({ 
-                            color: 0x2980b9,
+                        // Crear grupo para la celda
+                        const cellGroup = new THREE.Group();
+                        
+                        // Geometría del cubo wireframe
+                        const geometry = new THREE.BoxGeometry(cellSize, cellSize, cellSize);
+                        const edges = new THREE.EdgesGeometry(geometry);
+                        const lineMaterial = new THREE.LineBasicMaterial({ 
+                            color: 0x00ffff,
                             transparent: true,
-                            opacity: 0.3,
-                            emissive: 0x1a5490,
-                            emissiveIntensity: 0.1
+                            opacity: 0.5
                         });
+                        const wireframe = new THREE.LineSegments(edges, lineMaterial);
+                        cellGroup.add(wireframe);
                         
-                        const cell = new THREE.Mesh(cellGeometry, cellMaterial);
-                        cell.position.set((x - 1) * 1.1, (y - 1) * 1.1, (z - 1) * 1.1);
-                        cell.userData = { x, y, z, occupied: false, originalColor: 0x2980b9 };
-                        cell.castShadow = true;
-                        cell.receiveShadow = true;
+                        // Cubo invisible para detección de clics
+                        const invisibleMaterial = new THREE.MeshBasicMaterial({
+                            transparent: true,
+                            opacity: 0,
+                            side: THREE.DoubleSide
+                        });
+                        const clickMesh = new THREE.Mesh(geometry, invisibleMaterial);
+                        clickMesh.userData = { x, y, z, occupied: false, wireframe: wireframe };
+                        cellGroup.add(clickMesh);
                         
-                        // Agregar bordes brillantes
-                        const edges = new THREE.EdgesGeometry(cellGeometry);
-                        const line = new THREE.LineSegments(
-                            edges,
-                            new THREE.LineBasicMaterial({ 
-                                color: 0x00ffff,
-                                linewidth: 2
-                            })
+                        // Posicionar celda
+                        cellGroup.position.set(
+                            (x - 1) * spacing,
+                            (y - 1) * spacing,
+                            (z - 1) * spacing
                         );
-                        cell.add(line);
                         
-                        cells.push(cell);
-                        cubeGroup.add(cell);
+                        cells.push(clickMesh);
+                        cubeGroup.add(cellGroup);
                     }
                 }
             }
@@ -203,26 +260,41 @@
         function createX(position) {
             const group = new THREE.Group();
             
-            const material = new THREE.MeshPhongMaterial({ 
-                color: 0xff4444,
-                emissive: 0xff0000,
-                emissiveIntensity: 0.3
+            // Material magenta brillante
+            const material = new THREE.MeshBasicMaterial({ 
+                color: 0xff00ff
             });
-            const geometry = new THREE.BoxGeometry(0.7, 0.15, 0.15);
+            
+            // Crear X con cilindros
+            const geometry = new THREE.CylinderGeometry(0.06, 0.06, 0.8, 16);
             
             const bar1 = new THREE.Mesh(geometry, material);
             bar1.rotation.z = Math.PI / 4;
-            bar1.castShadow = true;
             group.add(bar1);
             
             const bar2 = new THREE.Mesh(geometry, material);
             bar2.rotation.z = -Math.PI / 4;
-            bar2.castShadow = true;
             group.add(bar2);
+            
+            // Efecto de brillo
+            const glowMaterial = new THREE.MeshBasicMaterial({
+                color: 0xff00ff,
+                transparent: true,
+                opacity: 0.3
+            });
+            const glowGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 16);
+            
+            const glow1 = new THREE.Mesh(glowGeometry, glowMaterial);
+            glow1.rotation.z = Math.PI / 4;
+            group.add(glow1);
+            
+            const glow2 = new THREE.Mesh(glowGeometry, glowMaterial);
+            glow2.rotation.z = -Math.PI / 4;
+            group.add(glow2);
             
             group.position.copy(position);
             
-            // Animación de aparición
+            // Animación de entrada
             group.scale.set(0, 0, 0);
             animateScale(group, 1);
             
@@ -230,68 +302,80 @@
         }
         
         function createO(position) {
-            const geometry = new THREE.TorusGeometry(0.3, 0.1, 16, 100);
-            const material = new THREE.MeshPhongMaterial({ 
-                color: 0x44ff44,
-                emissive: 0x00ff00,
-                emissiveIntensity: 0.3
+            const group = new THREE.Group();
+            
+            // Torus verde brillante
+            const geometry = new THREE.TorusGeometry(0.25, 0.06, 16, 100);
+            const material = new THREE.MeshBasicMaterial({ 
+                color: 0x00ff00
             });
             const torus = new THREE.Mesh(geometry, material);
-            torus.position.copy(position);
-            torus.castShadow = true;
+            group.add(torus);
             
-            // Animación de aparición
-            torus.scale.set(0, 0, 0);
-            animateScale(torus, 1);
+            // Efecto de brillo
+            const glowGeometry = new THREE.TorusGeometry(0.25, 0.1, 16, 100);
+            const glowMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00ff00,
+                transparent: true,
+                opacity: 0.3
+            });
+            const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+            group.add(glow);
             
-            return torus;
+            group.position.copy(position);
+            
+            // Animación de entrada
+            group.scale.set(0, 0, 0);
+            animateScale(group, 1);
+            
+            return group;
         }
         
         function animateScale(object, targetScale) {
-            const startScale = 0;
             const duration = 300;
             const startTime = Date.now();
             
-            function updateScale() {
+            function update() {
                 const elapsed = Date.now() - startTime;
                 const progress = Math.min(elapsed / duration, 1);
-                const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+                const eased = 1 - Math.pow(1 - progress, 3);
                 
-                const scale = startScale + (targetScale - startScale) * eased;
-                object.scale.set(scale, scale, scale);
+                object.scale.setScalar(eased * targetScale);
+                object.rotation.y = progress * Math.PI;
                 
                 if (progress < 1) {
-                    requestAnimationFrame(updateScale);
+                    requestAnimationFrame(update);
                 }
             }
             
-            updateScale();
+            update();
         }
         
         function onMouseMove(event) {
-            const rect = renderer.domElement.getBoundingClientRect();
-            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
             
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects(cells);
             
-            // Reset all cells to default
+            // Reset todos los wireframes
             cells.forEach(cell => {
                 if (!cell.userData.occupied) {
-                    cell.material.opacity = 0.3;
-                    cell.material.emissiveIntensity = 0.1;
+                    cell.userData.wireframe.material.opacity = 0.5;
+                    cell.userData.wireframe.material.color.setHex(0x00ffff);
                 }
             });
             
-            // Highlight hovered cell
-            if (intersects.length > 0 && !intersects[0].object.userData.occupied && !gameOver) {
+            // Resaltar celda bajo el mouse
+            if (intersects.length > 0 && !gameOver) {
                 const hoveredCell = intersects[0].object;
-                hoveredCell.material.opacity = 0.6;
-                hoveredCell.material.emissiveIntensity = 0.3;
-                renderer.domElement.style.cursor = 'pointer';
+                if (!hoveredCell.userData.occupied) {
+                    hoveredCell.userData.wireframe.material.opacity = 1;
+                    hoveredCell.userData.wireframe.material.color.setHex(0xffffff);
+                    document.body.style.cursor = 'pointer';
+                }
             } else {
-                renderer.domElement.style.cursor = 'default';
+                document.body.style.cursor = 'default';
             }
         }
         
@@ -306,20 +390,29 @@
                 const { x, y, z, occupied } = cell.userData;
                 
                 if (!occupied) {
-                    // Marcar la celda como ocupada
+                    // Marcar celda como ocupada
                     cell.userData.occupied = true;
-                    cell.material.opacity = 0.7;
                     
-                    // Colocar X o O
+                    // Cambiar color del wireframe
+                    if (currentPlayer === 'X') {
+                        cell.userData.wireframe.material.color.setHex(0xff00ff);
+                        cell.userData.wireframe.material.opacity = 0.8;
+                    } else {
+                        cell.userData.wireframe.material.color.setHex(0x00ff00);
+                        cell.userData.wireframe.material.opacity = 0.8;
+                    }
+                    
+                    // Crear pieza
+                    const worldPos = new THREE.Vector3();
+                    cell.parent.getWorldPosition(worldPos);
+                    
                     let piece;
                     if (currentPlayer === 'X') {
-                        piece = createX(cell.position);
-                        cell.material.color = new THREE.Color(0x661111);
+                        piece = createX(worldPos);
                     } else {
-                        piece = createO(cell.position);
-                        cell.material.color = new THREE.Color(0x116611);
+                        piece = createO(worldPos);
                     }
-                    cubeGroup.add(piece);
+                    scene.add(piece);
                     
                     // Actualizar estado del juego
                     gameState[x][y][z] = currentPlayer;
@@ -327,22 +420,23 @@
                     // Verificar ganador
                     if (checkWinner(currentPlayer)) {
                         gameOver = true;
-                        document.getElementById('winner').textContent = `¡Jugador ${currentPlayer} gana!`;
+                        document.getElementById('winner').innerHTML = 
+                            `<span class="player-${currentPlayer.toLowerCase()}">PLAYER ${currentPlayer} WINS!</span>`;
                         highlightWinningLine(currentPlayer);
                     } else if (checkDraw()) {
                         gameOver = true;
-                        document.getElementById('winner').textContent = '¡Empate!';
+                        document.getElementById('winner').textContent = 'DRAW!';
                     } else {
                         // Cambiar turno
                         currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
-                        document.getElementById('info').textContent = `Turno: Jugador ${currentPlayer}`;
+                        document.getElementById('info').innerHTML = 
+                            `PLAYER <span class="player-${currentPlayer.toLowerCase()}">${currentPlayer}</span> TURN`;
                     }
                 }
             }
         }
         
         function checkWinner(player) {
-            // Verificar todas las posibles líneas ganadoras
             const lines = getAllWinningLines();
             
             for (let line of lines) {
@@ -357,38 +451,22 @@
         function getAllWinningLines() {
             const lines = [];
             
-            // Líneas en cada plano
+            // Líneas horizontales, verticales y profundidad
             for (let i = 0; i < 3; i++) {
-                // Planos XY (Z fijo)
                 for (let j = 0; j < 3; j++) {
-                    // Filas
-                    lines.push([[j, 0, i], [j, 1, i], [j, 2, i]]);
-                    // Columnas
-                    lines.push([[0, j, i], [1, j, i], [2, j, i]]);
+                    // Líneas en X
+                    lines.push([[0, i, j], [1, i, j], [2, i, j]]);
+                    // Líneas en Y
+                    lines.push([[i, 0, j], [i, 1, j], [i, 2, j]]);
+                    // Líneas en Z
+                    lines.push([[i, j, 0], [i, j, 1], [i, j, 2]]);
                 }
-                // Diagonales XY
+                
+                // Diagonales 2D en cada plano
                 lines.push([[0, 0, i], [1, 1, i], [2, 2, i]]);
                 lines.push([[2, 0, i], [1, 1, i], [0, 2, i]]);
-                
-                // Planos XZ (Y fijo)
-                for (let j = 0; j < 3; j++) {
-                    // Filas
-                    lines.push([[j, i, 0], [j, i, 1], [j, i, 2]]);
-                    // Columnas
-                    lines.push([[0, i, j], [1, i, j], [2, i, j]]);
-                }
-                // Diagonales XZ
                 lines.push([[0, i, 0], [1, i, 1], [2, i, 2]]);
                 lines.push([[2, i, 0], [1, i, 1], [0, i, 2]]);
-                
-                // Planos YZ (X fijo)
-                for (let j = 0; j < 3; j++) {
-                    // Filas
-                    lines.push([[i, j, 0], [i, j, 1], [i, j, 2]]);
-                    // Columnas
-                    lines.push([[i, 0, j], [i, 1, j], [i, 2, j]]);
-                }
-                // Diagonales YZ
                 lines.push([[i, 0, 0], [i, 1, 1], [i, 2, 2]]);
                 lines.push([[i, 2, 0], [i, 1, 1], [i, 0, 2]]);
             }
@@ -404,14 +482,26 @@
         
         function highlightWinningLine(player) {
             const lines = getAllWinningLines();
+            const color = player === 'X' ? 0xff00ff : 0x00ff00;
             
             for (let line of lines) {
                 if (line.every(([x, y, z]) => gameState[x][y][z] === player)) {
-                    // Resaltar las celdas ganadoras
                     line.forEach(([x, y, z]) => {
                         const index = x * 9 + y * 3 + z;
-                        cells[index].material.emissiveIntensity = 0.8;
-                        cells[index].material.opacity = 1;
+                        const wireframe = cells[index].userData.wireframe;
+                        wireframe.material.color.setHex(0xffffff);
+                        wireframe.material.opacity = 1;
+                        
+                        // Animación de pulso para celdas ganadoras
+                        const originalScale = wireframe.scale.x;
+                        function pulseAnimation() {
+                            const scale = originalScale + Math.sin(Date.now() * 0.005) * 0.1;
+                            wireframe.scale.set(scale, scale, scale);
+                            if (gameOver) {
+                                requestAnimationFrame(pulseAnimation);
+                            }
+                        }
+                        pulseAnimation();
                     });
                     break;
                 }
@@ -430,7 +520,16 @@
         }
         
         function resetGame() {
-            // Limpiar la escena
+            // Limpiar la escena (remover todo excepto luces)
+            const objectsToRemove = [];
+            scene.traverse((child) => {
+                if (child.type === 'Group' && child !== cubeGroup) {
+                    objectsToRemove.push(child);
+                }
+            });
+            objectsToRemove.forEach(obj => scene.remove(obj));
+            
+            // Limpiar cubeGroup
             while(cubeGroup.children.length > 0) {
                 cubeGroup.remove(cubeGroup.children[0]);
             }
@@ -447,7 +546,7 @@
             
             currentPlayer = 'X';
             gameOver = false;
-            document.getElementById('info').textContent = `Turno: Jugador ${currentPlayer}`;
+            document.getElementById('info').innerHTML = 'PLAYER <span class="player-x">X</span> TURN';
             document.getElementById('winner').textContent = '';
             
             // Recrear el cubo
@@ -459,28 +558,25 @@
         }
         
         function onWindowResize() {
-            const aspect = window.innerWidth / window.innerHeight;
-            camera.aspect = aspect;
+            camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
-            renderer.setSize(Math.min(window.innerWidth - 40, 800), 600);
+            renderer.setSize(window.innerWidth, window.innerHeight);
         }
         
         function animate() {
             requestAnimationFrame(animate);
             
-            // Rotar el cubo si está activado
-            if (autoRotate && !gameOver) {
+            // Rotación automática
+            if (autoRotate) {
                 cubeGroup.rotation.y += 0.005;
-                cubeGroup.rotation.x += 0.002;
+                cubeGroup.rotation.x = Math.sin(Date.now() * 0.0005) * 0.1;
             }
             
             renderer.render(scene, camera);
         }
         
-        // Iniciar el juego
-        window.onload = function() {
-            init();
-        };
+        // Iniciar cuando la página cargue
+        window.addEventListener('load', init);
     </script>
 </body>
 </html>
