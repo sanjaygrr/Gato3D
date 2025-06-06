@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe 3D</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            overflow: hidden;
+        }
+        
+        #container {
+            text-align: center;
+            width: 100%;
+            max-width: 900px;
+        }
+        
+        #gameCanvas {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+        }
+        
+        #info {
+            margin-top: 20px;
+            font-size: 20px;
+        }
+        
+        #controls {
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 0 5px;
+        }
+        
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+        
+        #winner {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 20px;
+            color: #4CAF50;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            min-height: 30px;
+        }
+        
+        .instructions {
+            margin-top: 20px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>Tic-Tac-Toe 3D</h1>
+        <div id="gameCanvas"></div>
+        <div id="info">Turno: Jugador X</div>
+        <div id="winner"></div>
+        <div id="controls">
+            <button onclick="resetGame()">Nuevo Juego</button>
+            <button onclick="toggleRotation()">Pausar/Reanudar Rotación</button>
+        </div>
+        <div class="instructions">
+            Haz clic en cualquier cubo para colocar tu marca. Forma una línea de 3 para ganar.
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        let scene, camera, renderer;
+        let cubeGroup;
+        let cells = [];
+        let gameState = [];
+        let currentPlayer = 'X';
+        let gameOver = false;
+        let raycaster, mouse;
+        let autoRotate = true;
+        
+        // Inicializar el estado del juego
+        for (let i = 0; i < 3; i++) {
+            gameState[i] = [];
+            for (let j = 0; j < 3; j++) {
+                gameState[i][j] = [];
+                for (let k = 0; k < 3; k++) {
+                    gameState[i][j][k] = null;
+                }
+            }
+        }
+        
+        function init() {
+            // Crear el div contenedor del canvas
+            const container = document.getElementById('gameCanvas');
+            
+            // Escena
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0a0a);
+            
+            // Cámara
+            const aspect = window.innerWidth / window.innerHeight;
+            camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
+            camera.position.set(6, 6, 6);
+            camera.lookAt(0, 0, 0);
+            
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(800, 600);
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+            
+            // Luces
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            directionalLight.position.set(10, 10, 5);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+            
+            const pointLight = new THREE.PointLight(0xffffff, 0.4);
+            pointLight.position.set(-5, -5, -5);
+            scene.add(pointLight);
+            
+            // Grupo para el cubo
+            cubeGroup = new THREE.Group();
+            scene.add(cubeGroup);
+            
+            // Crear las celdas del cubo
+            createCube();
+            
+            // Raycaster para detectar clics
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+            
+            // Event listeners
+            renderer.domElement.addEventListener('click', onMouseClick);
+            renderer.domElement.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('resize', onWindowResize);
+            
+            animate();
+        }
+        
+        function createCube() {
+            const cellGeometry = new THREE.BoxGeometry(0.9, 0.9, 0.9);
+            
+            for (let x = 0; x < 3; x++) {
+                for (let y = 0; y < 3; y++) {
+                    for (let z = 0; z < 3; z++) {
+                        // Material único para cada celda
+                        const cellMaterial = new THREE.MeshPhongMaterial({ 
+                            color: 0x2980b9,
+                            transparent: true,
+                            opacity: 0.3,
+                            emissive: 0x1a5490,
+                            emissiveIntensity: 0.1
+                        });
+                        
+                        const cell = new THREE.Mesh(cellGeometry, cellMaterial);
+                        cell.position.set((x - 1) * 1.1, (y - 1) * 1.1, (z - 1) * 1.1);
+                        cell.userData = { x, y, z, occupied: false, originalColor: 0x2980b9 };
+                        cell.castShadow = true;
+                        cell.receiveShadow = true;
+                        
+                        // Agregar bordes brillantes
+                        const edges = new THREE.EdgesGeometry(cellGeometry);
+                        const line = new THREE.LineSegments(
+                            edges,
+                            new THREE.LineBasicMaterial({ 
+                                color: 0x00ffff,
+                                linewidth: 2
+                            })
+                        );
+                        cell.add(line);
+                        
+                        cells.push(cell);
+                        cubeGroup.add(cell);
+                    }
+                }
+            }
+        }
+        
+        function createX(position) {
+            const group = new THREE.Group();
+            
+            const material = new THREE.MeshPhongMaterial({ 
+                color: 0xff4444,
+                emissive: 0xff0000,
+                emissiveIntensity: 0.3
+            });
+            const geometry = new THREE.BoxGeometry(0.7, 0.15, 0.15);
+            
+            const bar1 = new THREE.Mesh(geometry, material);
+            bar1.rotation.z = Math.PI / 4;
+            bar1.castShadow = true;
+            group.add(bar1);
+            
+            const bar2 = new THREE.Mesh(geometry, material);
+            bar2.rotation.z = -Math.PI / 4;
+            bar2.castShadow = true;
+            group.add(bar2);
+            
+            group.position.copy(position);
+            
+            // Animación de aparición
+            group.scale.set(0, 0, 0);
+            animateScale(group, 1);
+            
+            return group;
+        }
+        
+        function createO(position) {
+            const geometry = new THREE.TorusGeometry(0.3, 0.1, 16, 100);
+            const material = new THREE.MeshPhongMaterial({ 
+                color: 0x44ff44,
+                emissive: 0x00ff00,
+                emissiveIntensity: 0.3
+            });
+            const torus = new THREE.Mesh(geometry, material);
+            torus.position.copy(position);
+            torus.castShadow = true;
+            
+            // Animación de aparición
+            torus.scale.set(0, 0, 0);
+            animateScale(torus, 1);
+            
+            return torus;
+        }
+        
+        function animateScale(object, targetScale) {
+            const startScale = 0;
+            const duration = 300;
+            const startTime = Date.now();
+            
+            function updateScale() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+                
+                const scale = startScale + (targetScale - startScale) * eased;
+                object.scale.set(scale, scale, scale);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(updateScale);
+                }
+            }
+            
+            updateScale();
+        }
+        
+        function onMouseMove(event) {
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(cells);
+            
+            // Reset all cells to default
+            cells.forEach(cell => {
+                if (!cell.userData.occupied) {
+                    cell.material.opacity = 0.3;
+                    cell.material.emissiveIntensity = 0.1;
+                }
+            });
+            
+            // Highlight hovered cell
+            if (intersects.length > 0 && !intersects[0].object.userData.occupied && !gameOver) {
+                const hoveredCell = intersects[0].object;
+                hoveredCell.material.opacity = 0.6;
+                hoveredCell.material.emissiveIntensity = 0.3;
+                renderer.domElement.style.cursor = 'pointer';
+            } else {
+                renderer.domElement.style.cursor = 'default';
+            }
+        }
+        
+        function onMouseClick(event) {
+            if (gameOver) return;
+            
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(cells);
+            
+            if (intersects.length > 0) {
+                const cell = intersects[0].object;
+                const { x, y, z, occupied } = cell.userData;
+                
+                if (!occupied) {
+                    // Marcar la celda como ocupada
+                    cell.userData.occupied = true;
+                    cell.material.opacity = 0.7;
+                    
+                    // Colocar X o O
+                    let piece;
+                    if (currentPlayer === 'X') {
+                        piece = createX(cell.position);
+                        cell.material.color = new THREE.Color(0x661111);
+                    } else {
+                        piece = createO(cell.position);
+                        cell.material.color = new THREE.Color(0x116611);
+                    }
+                    cubeGroup.add(piece);
+                    
+                    // Actualizar estado del juego
+                    gameState[x][y][z] = currentPlayer;
+                    
+                    // Verificar ganador
+                    if (checkWinner(currentPlayer)) {
+                        gameOver = true;
+                        document.getElementById('winner').textContent = `¡Jugador ${currentPlayer} gana!`;
+                        highlightWinningLine(currentPlayer);
+                    } else if (checkDraw()) {
+                        gameOver = true;
+                        document.getElementById('winner').textContent = '¡Empate!';
+                    } else {
+                        // Cambiar turno
+                        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                        document.getElementById('info').textContent = `Turno: Jugador ${currentPlayer}`;
+                    }
+                }
+            }
+        }
+        
+        function checkWinner(player) {
+            // Verificar todas las posibles líneas ganadoras
+            const lines = getAllWinningLines();
+            
+            for (let line of lines) {
+                if (line.every(([x, y, z]) => gameState[x][y][z] === player)) {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+        
+        function getAllWinningLines() {
+            const lines = [];
+            
+            // Líneas en cada plano
+            for (let i = 0; i < 3; i++) {
+                // Planos XY (Z fijo)
+                for (let j = 0; j < 3; j++) {
+                    // Filas
+                    lines.push([[j, 0, i], [j, 1, i], [j, 2, i]]);
+                    // Columnas
+                    lines.push([[0, j, i], [1, j, i], [2, j, i]]);
+                }
+                // Diagonales XY
+                lines.push([[0, 0, i], [1, 1, i], [2, 2, i]]);
+                lines.push([[2, 0, i], [1, 1, i], [0, 2, i]]);
+                
+                // Planos XZ (Y fijo)
+                for (let j = 0; j < 3; j++) {
+                    // Filas
+                    lines.push([[j, i, 0], [j, i, 1], [j, i, 2]]);
+                    // Columnas
+                    lines.push([[0, i, j], [1, i, j], [2, i, j]]);
+                }
+                // Diagonales XZ
+                lines.push([[0, i, 0], [1, i, 1], [2, i, 2]]);
+                lines.push([[2, i, 0], [1, i, 1], [0, i, 2]]);
+                
+                // Planos YZ (X fijo)
+                for (let j = 0; j < 3; j++) {
+                    // Filas
+                    lines.push([[i, j, 0], [i, j, 1], [i, j, 2]]);
+                    // Columnas
+                    lines.push([[i, 0, j], [i, 1, j], [i, 2, j]]);
+                }
+                // Diagonales YZ
+                lines.push([[i, 0, 0], [i, 1, 1], [i, 2, 2]]);
+                lines.push([[i, 2, 0], [i, 1, 1], [i, 0, 2]]);
+            }
+            
+            // Diagonales 3D principales
+            lines.push([[0, 0, 0], [1, 1, 1], [2, 2, 2]]);
+            lines.push([[2, 0, 0], [1, 1, 1], [0, 2, 2]]);
+            lines.push([[0, 2, 0], [1, 1, 1], [2, 0, 2]]);
+            lines.push([[2, 2, 0], [1, 1, 1], [0, 0, 2]]);
+            
+            return lines;
+        }
+        
+        function highlightWinningLine(player) {
+            const lines = getAllWinningLines();
+            
+            for (let line of lines) {
+                if (line.every(([x, y, z]) => gameState[x][y][z] === player)) {
+                    // Resaltar las celdas ganadoras
+                    line.forEach(([x, y, z]) => {
+                        const index = x * 9 + y * 3 + z;
+                        cells[index].material.emissiveIntensity = 0.8;
+                        cells[index].material.opacity = 1;
+                    });
+                    break;
+                }
+            }
+        }
+        
+        function checkDraw() {
+            for (let x = 0; x < 3; x++) {
+                for (let y = 0; y < 3; y++) {
+                    for (let z = 0; z < 3; z++) {
+                        if (gameState[x][y][z] === null) return false;
+                    }
+                }
+            }
+            return true;
+        }
+        
+        function resetGame() {
+            // Limpiar la escena
+            while(cubeGroup.children.length > 0) {
+                cubeGroup.remove(cubeGroup.children[0]);
+            }
+            cells = [];
+            
+            // Reiniciar estado
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    for (let k = 0; k < 3; k++) {
+                        gameState[i][j][k] = null;
+                    }
+                }
+            }
+            
+            currentPlayer = 'X';
+            gameOver = false;
+            document.getElementById('info').textContent = `Turno: Jugador ${currentPlayer}`;
+            document.getElementById('winner').textContent = '';
+            
+            // Recrear el cubo
+            createCube();
+        }
+        
+        function toggleRotation() {
+            autoRotate = !autoRotate;
+        }
+        
+        function onWindowResize() {
+            const aspect = window.innerWidth / window.innerHeight;
+            camera.aspect = aspect;
+            camera.updateProjectionMatrix();
+            renderer.setSize(Math.min(window.innerWidth - 40, 800), 600);
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Rotar el cubo si está activado
+            if (autoRotate && !gameOver) {
+                cubeGroup.rotation.y += 0.005;
+                cubeGroup.rotation.x += 0.002;
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Iniciar el juego
+        window.onload = function() {
+            init();
+        };
+    </script>
+</body>
+</html>
