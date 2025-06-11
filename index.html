@@ -85,8 +85,75 @@
             50% { transform: scale(1.05); opacity: 0.8; }
         }
         
-        #controls {
-            position: absolute;
+        #settings {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #00ffff;
+            border-radius: 15px;
+            padding: 30px;
+            pointer-events: all;
+            z-index: 15;
+            backdrop-filter: blur(20px);
+            display: none;
+            min-width: 300px;
+            max-width: 50%;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+        }
+        
+        #settings.show {
+            display: block;
+            animation: modalFadeIn 0.3s ease-out;
+        }
+        
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translate(-50%, -60%); }
+            to { opacity: 1; transform: translate(-50%, -50%); }
+        }
+        
+        #settingsOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 14;
+            display: none;
+        }
+        
+        #settingsOverlay.show {
+            display: block;
+        }
+        
+        #settingsBtn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            pointer-events: all;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            font-size: 24px;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        #settingsBtn:hover {
+            transform: scale(1.1);
+            background: rgba(0, 255, 255, 0.1);
+        }
+        
+        #gameControls {
+            position: fixed;
             bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
@@ -94,12 +161,9 @@
             gap: 15px;
             pointer-events: all;
             z-index: 10;
-            flex-wrap: wrap;
-            justify-content: center;
-            max-width: 90%;
         }
         
-        button {
+        .control-btn {
             padding: 12px 25px;
             font-family: 'Orbitron', monospace;
             font-size: 12px;
@@ -113,48 +177,19 @@
             text-transform: uppercase;
             letter-spacing: 0.1em;
             backdrop-filter: blur(20px);
-            position: relative;
-            overflow: hidden;
         }
         
-        button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(0,255,255,0.3), transparent);
-            transition: left 0.5s;
-        }
-        
-        button:hover::before {
-            left: 100%;
-        }
-        
-        button:hover {
+        .control-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 30px rgba(0, 255, 255, 0.4);
             background: rgba(0, 255, 255, 0.1);
         }
         
-        #settings {
-            position: absolute;
-            top: 80px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.9);
-            border: 2px solid #00ffff;
-            border-radius: 15px;
-            padding: 20px;
-            pointer-events: all;
-            z-index: 15;
-            backdrop-filter: blur(20px);
-            display: none;
-            min-width: 250px;
-        }
-        
-        #settings.show {
-            display: block;
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
         
         #settings h3 {
@@ -217,23 +252,6 @@
             color: #ffaa00;
             text-shadow: 0 0 15px rgba(255, 170, 0, 0.8);
         }
-        
-        #settingsBtn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            pointer-events: all;
-            z-index: 10;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 10px 20px;
-            font-size: 20px;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
     </style>
 </head>
 <body>
@@ -244,8 +262,14 @@
         <div id="winner"></div>
     </div>
     
+    <div id="gameControls">
+        <button class="control-btn" onclick="resetGame()">NEW GAME</button>
+        <button class="control-btn" onclick="resetCamera()">RESET VIEW</button>
+    </div>
+    
     <button id="settingsBtn" onclick="toggleSettings()">⚙️</button>
     
+    <div id="settingsOverlay"></div>
     <div id="settings">
         <h3>SETTINGS</h3>
         <div class="setting-item">
@@ -266,11 +290,6 @@
                 <div class="toggle-knob"></div>
             </div>
         </div>
-    </div>
-    
-    <div id="controls">
-        <button onclick="resetGame()">NEW GAME</button>
-        <button onclick="resetCamera()">RESET VIEW</button>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -685,8 +704,12 @@
                     y: event.clientY - previousMousePosition.y
                 };
                 
-                targetRotation.y += deltaMove.x * 0.01;
-                targetRotation.x += deltaMove.y * 0.01;
+                // Rotación más suave y responsiva
+                targetRotation.y += deltaMove.x * 0.02;
+                targetRotation.x += deltaMove.y * 0.02;
+                
+                // Limitar la rotación vertical para evitar que el cubo se voltee
+                targetRotation.x = Math.max(-Math.PI/3, Math.min(Math.PI/3, targetRotation.x));
                 
                 previousMousePosition = {
                     x: event.clientX,
@@ -993,7 +1016,16 @@
         
         function toggleSettings() {
             const settings = document.getElementById('settings');
-            settings.classList.toggle('show');
+            const overlay = document.getElementById('settingsOverlay');
+            const isShowing = settings.classList.contains('show');
+            
+            if (isShowing) {
+                settings.classList.remove('show');
+                overlay.classList.remove('show');
+            } else {
+                settings.classList.add('show');
+                overlay.classList.add('show');
+            }
         }
         
         function toggleHideCenter() {
