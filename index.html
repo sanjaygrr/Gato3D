@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tic-Tac-Toe 3D</title>
+    <title>Tic-Tac-Toe 3D Ultimate</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
         
@@ -20,6 +20,7 @@
             overflow: hidden;
             height: 100vh;
             position: relative;
+            background: radial-gradient(circle at center, #0a0a0a 0%, #000 100%);
         }
         
         #gameCanvas {
@@ -28,6 +29,11 @@
             left: 0;
             width: 100%;
             height: 100%;
+            cursor: grab;
+        }
+        
+        #gameCanvas:active {
+            cursor: grabbing;
         }
         
         #ui {
@@ -39,36 +45,44 @@
             text-align: center;
             pointer-events: none;
             z-index: 10;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
         }
         
         h1 {
-            font-size: 2.5em;
+            font-size: 3em;
             font-weight: 900;
-            letter-spacing: 0.1em;
-            background: linear-gradient(45deg, #00ffff, #ff00ff);
+            letter-spacing: 0.15em;
+            background: linear-gradient(45deg, #00ffff, #ff00ff, #00ff00);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             margin-bottom: 20px;
+            text-shadow: 0 0 30px rgba(255,255,255,0.2);
+            animation: glow 3s ease-in-out infinite;
+        }
+        
+        @keyframes glow {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.2); }
         }
         
         #info {
-            font-size: 1.2em;
-            color: #00ffff;
-            text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+            font-size: 1.4em;
+            color: #fff;
+            text-shadow: 0 0 10px currentColor;
             margin-bottom: 10px;
         }
         
         #winner {
-            font-size: 1.8em;
+            font-size: 2em;
             font-weight: 700;
             height: 40px;
             animation: pulse 1s infinite;
         }
         
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
         }
         
         #controls {
@@ -77,9 +91,12 @@
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 20px;
+            gap: 15px;
             pointer-events: all;
             z-index: 10;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 90%;
         }
         
         button {
@@ -87,31 +104,135 @@
             font-family: 'Orbitron', monospace;
             font-size: 12px;
             font-weight: 700;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
             color: #00ffff;
             border: 2px solid #00ffff;
-            border-radius: 25px;
+            border-radius: 30px;
             cursor: pointer;
             transition: all 0.3s;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(20px);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+        
+        button:hover::before {
+            left: 100%;
         }
         
         button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(0, 255, 255, 0.5);
-            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 5px 30px rgba(0, 255, 255, 0.4);
+            background: rgba(0, 255, 255, 0.1);
+        }
+        
+        #settings {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ffff;
+            border-radius: 15px;
+            padding: 20px;
+            pointer-events: all;
+            z-index: 15;
+            backdrop-filter: blur(20px);
+            display: none;
+            min-width: 250px;
+        }
+        
+        #settings.show {
+            display: block;
+        }
+        
+        #settings h3 {
+            margin-bottom: 15px;
+            color: #00ffff;
+            font-size: 1.2em;
+        }
+        
+        .setting-item {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .toggle {
+            width: 50px;
+            height: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #666;
+            border-radius: 25px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .toggle.active {
+            background: rgba(0, 255, 255, 0.3);
+            border-color: #00ffff;
+        }
+        
+        .toggle-knob {
+            width: 19px;
+            height: 19px;
+            background: #666;
+            border-radius: 50%;
+            position: absolute;
+            top: 1px;
+            left: 1px;
+            transition: all 0.3s;
+        }
+        
+        .toggle.active .toggle-knob {
+            left: 26px;
+            background: #00ffff;
+            box-shadow: 0 0 10px #00ffff;
         }
         
         .player-x {
             color: #ff00ff;
-            text-shadow: 0 0 10px rgba(255, 0, 255, 0.8);
+            text-shadow: 0 0 15px rgba(255, 0, 255, 0.8);
         }
         
         .player-o {
             color: #00ff00;
-            text-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
+            text-shadow: 0 0 15px rgba(0, 255, 0, 0.8);
+        }
+        
+        .player-z {
+            color: #ffaa00;
+            text-shadow: 0 0 15px rgba(255, 170, 0, 0.8);
+        }
+        
+        #settingsBtn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            pointer-events: all;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px 20px;
+            font-size: 20px;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
     </style>
 </head>
@@ -122,29 +243,74 @@
         <div id="info">PLAYER <span class="player-x">X</span> TURN</div>
         <div id="winner"></div>
     </div>
+    
+    <button id="settingsBtn" onclick="toggleSettings()">⚙️</button>
+    
+    <div id="settings">
+        <h3>SETTINGS</h3>
+        <div class="setting-item">
+            <label>Hide Center</label>
+            <div class="toggle" id="hideCenterToggle" onclick="toggleHideCenter()">
+                <div class="toggle-knob"></div>
+            </div>
+        </div>
+        <div class="setting-item">
+            <label>3 Players Mode</label>
+            <div class="toggle" id="threePlayersToggle" onclick="toggleThreePlayers()">
+                <div class="toggle-knob"></div>
+            </div>
+        </div>
+        <div class="setting-item">
+            <label>Auto Rotate</label>
+            <div class="toggle active" id="autoRotateToggle" onclick="toggleAutoRotate()">
+                <div class="toggle-knob"></div>
+            </div>
+        </div>
+    </div>
+    
     <div id="controls">
         <button onclick="resetGame()">NEW GAME</button>
-        <button onclick="toggleRotation()">ROTATION</button>
+        <button onclick="resetCamera()">RESET VIEW</button>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         let scene, camera, renderer;
-        let cubeGroup;
+        let cubeGroup, symbolsGroup;
         let cells = [];
         let gameState = [];
         let currentPlayer = 'X';
         let gameOver = false;
         let raycaster, mouse;
+        let controls;
+        
+        // Settings
         let autoRotate = true;
+        let hideCenter = false;
+        let threePlayers = false;
+        let players = ['X', 'O'];
+        let playerColors = {
+            'X': 0xff00ff,
+            'O': 0x00ff00,
+            'Z': 0xffaa00
+        };
+        
+        // Mouse/Touch controls
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let targetRotation = { x: 0, y: 0 };
+        let currentRotation = { x: 0, y: 0 };
         
         // Inicializar el estado del juego
-        for (let i = 0; i < 3; i++) {
-            gameState[i] = [];
-            for (let j = 0; j < 3; j++) {
-                gameState[i][j] = [];
-                for (let k = 0; k < 3; k++) {
-                    gameState[i][j][k] = null;
+        function initGameState() {
+            gameState = [];
+            for (let i = 0; i < 3; i++) {
+                gameState[i] = [];
+                for (let j = 0; j < 3; j++) {
+                    gameState[i][j] = [];
+                    for (let k = 0; k < 3; k++) {
+                        gameState[i][j][k] = null;
+                    }
                 }
             }
         }
@@ -152,6 +318,7 @@
         function init() {
             // Escena
             scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0x000000, 5, 15);
             
             // Cámara
             camera = new THREE.PerspectiveCamera(
@@ -160,43 +327,56 @@
                 0.1, 
                 1000
             );
-            camera.position.set(6, 4, 6);
+            camera.position.set(5, 4, 5);
             camera.lookAt(0, 0, 0);
             
             // Renderer
             const canvas = document.getElementById('gameCanvas');
             renderer = new THREE.WebGLRenderer({ 
                 canvas: canvas,
-                antialias: true
+                antialias: true,
+                alpha: true
             });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setClearColor(0x000000);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             
-            // Luces
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+            // Luces ambiente
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
             scene.add(ambientLight);
             
-            // Luz cyan
-            const cyanLight = new THREE.PointLight(0x00ffff, 1, 20);
-            cyanLight.position.set(5, 5, 5);
-            scene.add(cyanLight);
+            // Luz direccional principal
+            const mainLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            mainLight.position.set(5, 10, 5);
+            mainLight.castShadow = true;
+            scene.add(mainLight);
             
-            // Luz magenta
-            const magentaLight = new THREE.PointLight(0xff00ff, 0.8, 20);
-            magentaLight.position.set(-5, -5, -5);
-            scene.add(magentaLight);
+            // Luces de colores
+            const lights = [
+                { color: 0x00ffff, position: [8, 5, 8], intensity: 0.8 },
+                { color: 0xff00ff, position: [-8, 5, -8], intensity: 0.8 },
+                { color: 0x00ff00, position: [0, 10, 0], intensity: 0.6 }
+            ];
             
-            // Luz verde
-            const greenLight = new THREE.PointLight(0x00ff00, 0.6, 20);
-            greenLight.position.set(0, 8, 0);
-            scene.add(greenLight);
+            lights.forEach(light => {
+                const pointLight = new THREE.PointLight(light.color, light.intensity, 20);
+                pointLight.position.set(...light.position);
+                scene.add(pointLight);
+            });
             
-            // Grupo para el cubo
+            // Grupos
             cubeGroup = new THREE.Group();
+            symbolsGroup = new THREE.Group();
             scene.add(cubeGroup);
+            scene.add(symbolsGroup);
+            
+            // Partículas de fondo
+            createParticles();
             
             // Crear las celdas del cubo
+            initGameState();
             createCube();
             
             // Raycaster para detectar clics
@@ -204,12 +384,33 @@
             mouse = new THREE.Vector2();
             
             // Event listeners
-            renderer.domElement.addEventListener('click', onMouseClick);
-            renderer.domElement.addEventListener('mousemove', onMouseMove);
-            window.addEventListener('resize', onWindowResize);
+            setupEventListeners();
             
             // Iniciar animación
             animate();
+        }
+        
+        function createParticles() {
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 1000;
+            const posArray = new Float32Array(particlesCount * 3);
+            
+            for (let i = 0; i < particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 20;
+            }
+            
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            
+            const particlesMaterial = new THREE.PointsMaterial({
+                size: 0.02,
+                color: 0x00ffff,
+                transparent: true,
+                opacity: 0.5,
+                blending: THREE.AdditiveBlending
+            });
+            
+            const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particlesMesh);
         }
         
         function createCube() {
@@ -219,29 +420,66 @@
             for (let x = 0; x < 3; x++) {
                 for (let y = 0; y < 3; y++) {
                     for (let z = 0; z < 3; z++) {
+                        // Skip center if hideCenter is true
+                        if (hideCenter && x === 1 && y === 1 && z === 1) {
+                            continue;
+                        }
+                        
                         // Crear grupo para la celda
                         const cellGroup = new THREE.Group();
                         
-                        // Geometría del cubo wireframe
+                        // Geometría del cubo con bordes redondeados (simulado)
                         const geometry = new THREE.BoxGeometry(cellSize, cellSize, cellSize);
+                        
+                        // Material glass-like
+                        const material = new THREE.MeshPhysicalMaterial({
+                            color: 0x00ffff,
+                            metalness: 0.1,
+                            roughness: 0.1,
+                            transmission: 0.9,
+                            transparent: true,
+                            opacity: 0.1,
+                            envMapIntensity: 1,
+                            clearcoat: 1,
+                            clearcoatRoughness: 0
+                        });
+                        
+                        const cubeMesh = new THREE.Mesh(geometry, material);
+                        cubeMesh.castShadow = true;
+                        cubeMesh.receiveShadow = true;
+                        cellGroup.add(cubeMesh);
+                        
+                        // Bordes brillantes
                         const edges = new THREE.EdgesGeometry(geometry);
                         const lineMaterial = new THREE.LineBasicMaterial({ 
                             color: 0x00ffff,
                             transparent: true,
-                            opacity: 0.5
+                            opacity: 0.6,
+                            linewidth: 2
                         });
                         const wireframe = new THREE.LineSegments(edges, lineMaterial);
                         cellGroup.add(wireframe);
                         
-                        // Cubo invisible para detección de clics
-                        const invisibleMaterial = new THREE.MeshBasicMaterial({
+                        // Añadir glow effect
+                        const glowGeometry = new THREE.BoxGeometry(cellSize * 1.1, cellSize * 1.1, cellSize * 1.1);
+                        const glowMaterial = new THREE.MeshBasicMaterial({
+                            color: 0x00ffff,
                             transparent: true,
-                            opacity: 0,
-                            side: THREE.DoubleSide
+                            opacity: 0.05,
+                            side: THREE.BackSide
                         });
-                        const clickMesh = new THREE.Mesh(geometry, invisibleMaterial);
-                        clickMesh.userData = { x, y, z, occupied: false, wireframe: wireframe };
-                        cellGroup.add(clickMesh);
+                        const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
+                        cellGroup.add(glowMesh);
+                        
+                        // Datos de la celda
+                        cubeMesh.userData = { 
+                            x, y, z, 
+                            occupied: false, 
+                            wireframe: wireframe,
+                            material: material,
+                            glowMesh: glowMesh,
+                            cellGroup: cellGroup
+                        };
                         
                         // Posicionar celda
                         cellGroup.position.set(
@@ -250,39 +488,46 @@
                             (z - 1) * spacing
                         );
                         
-                        cells.push(clickMesh);
+                        cells.push(cubeMesh);
                         cubeGroup.add(cellGroup);
                     }
                 }
             }
         }
         
-        function createX(position) {
+        function createX(position, cellGroup) {
             const group = new THREE.Group();
             
-            // Material magenta brillante
-            const material = new THREE.MeshBasicMaterial({ 
-                color: 0xff00ff
+            // Material con emisión
+            const material = new THREE.MeshPhysicalMaterial({ 
+                color: playerColors['X'],
+                emissive: playerColors['X'],
+                emissiveIntensity: 0.5,
+                metalness: 0.8,
+                roughness: 0.2
             });
             
-            // Crear X con cilindros
-            const geometry = new THREE.CylinderGeometry(0.06, 0.06, 0.8, 16);
+            // Crear X con cilindros mejorados
+            const geometry = new THREE.CylinderGeometry(0.08, 0.08, 0.7, 32);
             
             const bar1 = new THREE.Mesh(geometry, material);
             bar1.rotation.z = Math.PI / 4;
+            bar1.castShadow = true;
             group.add(bar1);
             
             const bar2 = new THREE.Mesh(geometry, material);
             bar2.rotation.z = -Math.PI / 4;
+            bar2.castShadow = true;
             group.add(bar2);
             
             // Efecto de brillo
             const glowMaterial = new THREE.MeshBasicMaterial({
-                color: 0xff00ff,
+                color: playerColors['X'],
                 transparent: true,
-                opacity: 0.3
+                opacity: 0.3,
+                side: THREE.BackSide
             });
-            const glowGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 16);
+            const glowGeometry = new THREE.CylinderGeometry(0.12, 0.12, 0.7, 32);
             
             const glow1 = new THREE.Mesh(glowGeometry, glowMaterial);
             glow1.rotation.z = Math.PI / 4;
@@ -292,7 +537,8 @@
             glow2.rotation.z = -Math.PI / 4;
             group.add(glow2);
             
-            group.position.copy(position);
+            // Añadir al grupo de la celda para que rote con ella
+            cellGroup.add(group);
             
             // Animación de entrada
             group.scale.set(0, 0, 0);
@@ -301,28 +547,76 @@
             return group;
         }
         
-        function createO(position) {
+        function createO(position, cellGroup) {
             const group = new THREE.Group();
             
-            // Torus verde brillante
-            const geometry = new THREE.TorusGeometry(0.25, 0.06, 16, 100);
-            const material = new THREE.MeshBasicMaterial({ 
-                color: 0x00ff00
+            // Torus con material mejorado
+            const geometry = new THREE.TorusGeometry(0.25, 0.08, 32, 100);
+            const material = new THREE.MeshPhysicalMaterial({ 
+                color: playerColors['O'],
+                emissive: playerColors['O'],
+                emissiveIntensity: 0.5,
+                metalness: 0.8,
+                roughness: 0.2
             });
             const torus = new THREE.Mesh(geometry, material);
+            torus.castShadow = true;
             group.add(torus);
             
             // Efecto de brillo
-            const glowGeometry = new THREE.TorusGeometry(0.25, 0.1, 16, 100);
+            const glowGeometry = new THREE.TorusGeometry(0.25, 0.12, 16, 100);
             const glowMaterial = new THREE.MeshBasicMaterial({
-                color: 0x00ff00,
+                color: playerColors['O'],
                 transparent: true,
-                opacity: 0.3
+                opacity: 0.3,
+                side: THREE.BackSide
             });
             const glow = new THREE.Mesh(glowGeometry, glowMaterial);
             group.add(glow);
             
-            group.position.copy(position);
+            // Añadir al grupo de la celda
+            cellGroup.add(group);
+            
+            // Animación de entrada
+            group.scale.set(0, 0, 0);
+            animateScale(group, 1);
+            
+            return group;
+        }
+        
+        function createZ(position, cellGroup) {
+            const group = new THREE.Group();
+            
+            // Material para Z (triángulo/pirámide)
+            const material = new THREE.MeshPhysicalMaterial({ 
+                color: playerColors['Z'],
+                emissive: playerColors['Z'],
+                emissiveIntensity: 0.5,
+                metalness: 0.8,
+                roughness: 0.2
+            });
+            
+            // Crear pirámide
+            const geometry = new THREE.ConeGeometry(0.3, 0.6, 4);
+            const pyramid = new THREE.Mesh(geometry, material);
+            pyramid.rotation.y = Math.PI / 4;
+            pyramid.castShadow = true;
+            group.add(pyramid);
+            
+            // Efecto de brillo
+            const glowGeometry = new THREE.ConeGeometry(0.35, 0.65, 4);
+            const glowMaterial = new THREE.MeshBasicMaterial({
+                color: playerColors['Z'],
+                transparent: true,
+                opacity: 0.3,
+                side: THREE.BackSide
+            });
+            const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+            glow.rotation.y = Math.PI / 4;
+            group.add(glow);
+            
+            // Añadir al grupo de la celda
+            cellGroup.add(group);
             
             // Animación de entrada
             group.scale.set(0, 0, 0);
@@ -332,16 +626,22 @@
         }
         
         function animateScale(object, targetScale) {
-            const duration = 300;
+            const duration = 400;
             const startTime = Date.now();
+            const startScale = object.scale.x;
             
             function update() {
                 const elapsed = Date.now() - startTime;
                 const progress = Math.min(elapsed / duration, 1);
-                const eased = 1 - Math.pow(1 - progress, 3);
                 
-                object.scale.setScalar(eased * targetScale);
-                object.rotation.y = progress * Math.PI;
+                // Easing function
+                const eased = 1 - Math.pow(1 - progress, 4);
+                
+                const scale = startScale + (targetScale - startScale) * eased;
+                object.scale.setScalar(scale);
+                
+                // Rotación durante la animación
+                object.rotation.y = progress * Math.PI * 2;
                 
                 if (progress < 1) {
                     requestAnimationFrame(update);
@@ -351,36 +651,95 @@
             update();
         }
         
+        function setupEventListeners() {
+            // Mouse events
+            renderer.domElement.addEventListener('mousedown', onMouseDown);
+            renderer.domElement.addEventListener('mousemove', onMouseMove);
+            renderer.domElement.addEventListener('mouseup', onMouseUp);
+            renderer.domElement.addEventListener('click', onMouseClick);
+            
+            // Touch events
+            renderer.domElement.addEventListener('touchstart', onTouchStart);
+            renderer.domElement.addEventListener('touchmove', onTouchMove);
+            renderer.domElement.addEventListener('touchend', onTouchEnd);
+            
+            // Window resize
+            window.addEventListener('resize', onWindowResize);
+        }
+        
+        function onMouseDown(event) {
+            isDragging = true;
+            previousMousePosition = {
+                x: event.clientX,
+                y: event.clientY
+            };
+        }
+        
         function onMouseMove(event) {
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
             
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(cells);
-            
-            // Reset todos los wireframes
-            cells.forEach(cell => {
-                if (!cell.userData.occupied) {
-                    cell.userData.wireframe.material.opacity = 0.5;
-                    cell.userData.wireframe.material.color.setHex(0x00ffff);
-                }
-            });
-            
-            // Resaltar celda bajo el mouse
-            if (intersects.length > 0 && !gameOver) {
-                const hoveredCell = intersects[0].object;
-                if (!hoveredCell.userData.occupied) {
-                    hoveredCell.userData.wireframe.material.opacity = 1;
-                    hoveredCell.userData.wireframe.material.color.setHex(0xffffff);
-                    document.body.style.cursor = 'pointer';
-                }
+            if (isDragging) {
+                const deltaMove = {
+                    x: event.clientX - previousMousePosition.x,
+                    y: event.clientY - previousMousePosition.y
+                };
+                
+                targetRotation.y += deltaMove.x * 0.01;
+                targetRotation.x += deltaMove.y * 0.01;
+                
+                previousMousePosition = {
+                    x: event.clientX,
+                    y: event.clientY
+                };
             } else {
-                document.body.style.cursor = 'default';
+                // Hover effect
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(cells);
+                
+                // Reset todos los efectos hover
+                cells.forEach(cell => {
+                    if (!cell.userData.occupied) {
+                        cell.userData.wireframe.material.opacity = 0.6;
+                        cell.userData.wireframe.material.color.setHex(0x00ffff);
+                        cell.userData.glowMesh.material.opacity = 0.05;
+                        cell.userData.material.opacity = 0.1;
+                    }
+                });
+                
+                // Aplicar efecto hover
+                if (intersects.length > 0 && !gameOver) {
+                    const hoveredCell = intersects[0].object;
+                    if (!hoveredCell.userData.occupied) {
+                        hoveredCell.userData.wireframe.material.opacity = 1;
+                        hoveredCell.userData.wireframe.material.color.setHex(0xffffff);
+                        hoveredCell.userData.glowMesh.material.opacity = 0.2;
+                        hoveredCell.userData.material.opacity = 0.3;
+                        
+                        // Animar el grosor de los bordes
+                        const scale = 1 + Math.sin(Date.now() * 0.005) * 0.05;
+                        hoveredCell.userData.cellGroup.scale.setScalar(scale);
+                        
+                        document.body.style.cursor = 'pointer';
+                    }
+                } else {
+                    document.body.style.cursor = isDragging ? 'grabbing' : 'grab';
+                }
             }
         }
         
+        function onMouseUp() {
+            isDragging = false;
+        }
+        
         function onMouseClick(event) {
-            if (gameOver) return;
+            if (gameOver || isDragging) return;
+            
+            // Prevenir click si estaba arrastrando
+            if (Math.abs(targetRotation.x - currentRotation.x) > 0.1 || 
+                Math.abs(targetRotation.y - currentRotation.y) > 0.1) {
+                return;
+            }
             
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects(cells);
@@ -390,49 +749,69 @@
                 const { x, y, z, occupied } = cell.userData;
                 
                 if (!occupied) {
-                    // Marcar celda como ocupada
-                    cell.userData.occupied = true;
-                    
-                    // Cambiar color del wireframe
-                    if (currentPlayer === 'X') {
-                        cell.userData.wireframe.material.color.setHex(0xff00ff);
-                        cell.userData.wireframe.material.opacity = 0.8;
-                    } else {
-                        cell.userData.wireframe.material.color.setHex(0x00ff00);
-                        cell.userData.wireframe.material.opacity = 0.8;
-                    }
-                    
-                    // Crear pieza
-                    const worldPos = new THREE.Vector3();
-                    cell.parent.getWorldPosition(worldPos);
-                    
-                    let piece;
-                    if (currentPlayer === 'X') {
-                        piece = createX(worldPos);
-                    } else {
-                        piece = createO(worldPos);
-                    }
-                    scene.add(piece);
-                    
-                    // Actualizar estado del juego
-                    gameState[x][y][z] = currentPlayer;
-                    
-                    // Verificar ganador
-                    if (checkWinner(currentPlayer)) {
-                        gameOver = true;
-                        document.getElementById('winner').innerHTML = 
-                            `<span class="player-${currentPlayer.toLowerCase()}">PLAYER ${currentPlayer} WINS!</span>`;
-                        highlightWinningLine(currentPlayer);
-                    } else if (checkDraw()) {
-                        gameOver = true;
-                        document.getElementById('winner').textContent = 'DRAW!';
-                    } else {
-                        // Cambiar turno
-                        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
-                        document.getElementById('info').innerHTML = 
-                            `PLAYER <span class="player-${currentPlayer.toLowerCase()}">${currentPlayer}</span> TURN`;
-                    }
+                    makeMove(cell, x, y, z);
                 }
+            }
+        }
+        
+        function onTouchStart(event) {
+            event.preventDefault();
+            const touch = event.touches[0];
+            onMouseDown({ clientX: touch.clientX, clientY: touch.clientY });
+        }
+        
+        function onTouchMove(event) {
+            event.preventDefault();
+            const touch = event.touches[0];
+            onMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
+        }
+        
+        function onTouchEnd(event) {
+            event.preventDefault();
+            onMouseUp();
+        }
+        
+        function makeMove(cell, x, y, z) {
+            // Marcar celda como ocupada
+            cell.userData.occupied = true;
+            
+            // Cambiar apariencia de la celda
+            const playerColor = playerColors[currentPlayer];
+            cell.userData.wireframe.material.color.setHex(playerColor);
+            cell.userData.wireframe.material.opacity = 1;
+            cell.userData.glowMesh.material.color.setHex(playerColor);
+            cell.userData.glowMesh.material.opacity = 0.2;
+            cell.userData.material.opacity = 0.2;
+            cell.userData.material.color.setHex(playerColor);
+            
+            // Crear símbolo
+            let piece;
+            if (currentPlayer === 'X') {
+                piece = createX(cell.position, cell.userData.cellGroup);
+            } else if (currentPlayer === 'O') {
+                piece = createO(cell.position, cell.userData.cellGroup);
+            } else {
+                piece = createZ(cell.position, cell.userData.cellGroup);
+            }
+            
+            // Actualizar estado del juego
+            gameState[x][y][z] = currentPlayer;
+            
+            // Verificar ganador
+            if (checkWinner(currentPlayer)) {
+                gameOver = true;
+                document.getElementById('winner').innerHTML = 
+                    `<span class="player-${currentPlayer.toLowerCase()}">PLAYER ${currentPlayer} WINS!</span>`;
+                highlightWinningLine(currentPlayer);
+            } else if (checkDraw()) {
+                gameOver = true;
+                document.getElementById('winner').textContent = 'DRAW!';
+            } else {
+                // Cambiar turno
+                const playerIndex = players.indexOf(currentPlayer);
+                currentPlayer = players[(playerIndex + 1) % players.length];
+                document.getElementById('info').innerHTML = 
+                    `PLAYER <span class="player-${currentPlayer.toLowerCase()}">${currentPlayer}</span> TURN`;
             }
         }
         
@@ -440,7 +819,16 @@
             const lines = getAllWinningLines();
             
             for (let line of lines) {
-                if (line.every(([x, y, z]) => gameState[x][y][z] === player)) {
+                const validCells = line.filter(([x, y, z]) => {
+                    // Skip center if hidden
+                    if (hideCenter && x === 1 && y === 1 && z === 1) {
+                        return false;
+                    }
+                    return true;
+                });
+                
+                if (validCells.length >= 3 && 
+                    validCells.every(([x, y, z]) => gameState[x][y][z] === player)) {
                     return true;
                 }
             }
@@ -482,26 +870,43 @@
         
         function highlightWinningLine(player) {
             const lines = getAllWinningLines();
-            const color = player === 'X' ? 0xff00ff : 0x00ff00;
+            const color = playerColors[player];
             
             for (let line of lines) {
-                if (line.every(([x, y, z]) => gameState[x][y][z] === player)) {
-                    line.forEach(([x, y, z]) => {
-                        const index = x * 9 + y * 3 + z;
-                        const wireframe = cells[index].userData.wireframe;
-                        wireframe.material.color.setHex(0xffffff);
-                        wireframe.material.opacity = 1;
+                const validCells = line.filter(([x, y, z]) => {
+                    if (hideCenter && x === 1 && y === 1 && z === 1) {
+                        return false;
+                    }
+                    return true;
+                });
+                
+                if (validCells.length >= 3 && 
+                    validCells.every(([x, y, z]) => gameState[x][y][z] === player)) {
+                    validCells.forEach(([x, y, z]) => {
+                        const cell = cells.find(c => 
+                            c.userData.x === x && 
+                            c.userData.y === y && 
+                            c.userData.z === z
+                        );
                         
-                        // Animación de pulso para celdas ganadoras
-                        const originalScale = wireframe.scale.x;
-                        function pulseAnimation() {
-                            const scale = originalScale + Math.sin(Date.now() * 0.005) * 0.1;
-                            wireframe.scale.set(scale, scale, scale);
-                            if (gameOver) {
-                                requestAnimationFrame(pulseAnimation);
+                        if (cell) {
+                            const wireframe = cell.userData.wireframe;
+                            wireframe.material.color.setHex(0xffffff);
+                            wireframe.material.opacity = 1;
+                            
+                            // Animación de victoria
+                            const cellGroup = cell.userData.cellGroup;
+                            function victoryAnimation() {
+                                const scale = 1 + Math.sin(Date.now() * 0.01) * 0.1;
+                                cellGroup.scale.setScalar(scale);
+                                cellGroup.rotation.y += 0.02;
+                                
+                                if (gameOver) {
+                                    requestAnimationFrame(victoryAnimation);
+                                }
                             }
+                            victoryAnimation();
                         }
-                        pulseAnimation();
                     });
                     break;
                 }
@@ -512,6 +917,9 @@
             for (let x = 0; x < 3; x++) {
                 for (let y = 0; y < 3; y++) {
                     for (let z = 0; z < 3; z++) {
+                        if (hideCenter && x === 1 && y === 1 && z === 1) {
+                            continue;
+                        }
                         if (gameState[x][y][z] === null) return false;
                     }
                 }
@@ -520,30 +928,14 @@
         }
         
         function resetGame() {
-            // Limpiar la escena (remover todo excepto luces)
-            const objectsToRemove = [];
-            scene.traverse((child) => {
-                if (child.type === 'Group' && child !== cubeGroup) {
-                    objectsToRemove.push(child);
-                }
-            });
-            objectsToRemove.forEach(obj => scene.remove(obj));
-            
-            // Limpiar cubeGroup
+            // Limpiar la escena
             while(cubeGroup.children.length > 0) {
                 cubeGroup.remove(cubeGroup.children[0]);
             }
             cells = [];
             
             // Reiniciar estado
-            for (let i = 0; i < 3; i++) {
-                for (let j = 0; j < 3; j++) {
-                    for (let k = 0; k < 3; k++) {
-                        gameState[i][j][k] = null;
-                    }
-                }
-            }
-            
+            initGameState();
             currentPlayer = 'X';
             gameOver = false;
             document.getElementById('info').innerHTML = 'PLAYER <span class="player-x">X</span> TURN';
@@ -553,8 +945,33 @@
             createCube();
         }
         
-        function toggleRotation() {
+        function resetCamera() {
+            targetRotation = { x: 0, y: 0 };
+            camera.position.set(5, 4, 5);
+            camera.lookAt(0, 0, 0);
+        }
+        
+        function toggleSettings() {
+            const settings = document.getElementById('settings');
+            settings.classList.toggle('show');
+        }
+        
+        function toggleHideCenter() {
+            hideCenter = !hideCenter;
+            document.getElementById('hideCenterToggle').classList.toggle('active');
+            resetGame();
+        }
+        
+        function toggleThreePlayers() {
+            threePlayers = !threePlayers;
+            players = threePlayers ? ['X', 'O', 'Z'] : ['X', 'O'];
+            document.getElementById('threePlayersToggle').classList.toggle('active');
+            resetGame();
+        }
+        
+        function toggleAutoRotate() {
             autoRotate = !autoRotate;
+            document.getElementById('autoRotateToggle').classList.toggle('active');
         }
         
         function onWindowResize() {
@@ -566,12 +983,21 @@
         function animate() {
             requestAnimationFrame(animate);
             
-            // Rotación automática
-            if (autoRotate) {
-                cubeGroup.rotation.y += 0.005;
-                cubeGroup.rotation.x = Math.sin(Date.now() * 0.0005) * 0.1;
+            // Smooth rotation
+            currentRotation.x += (targetRotation.x - currentRotation.x) * 0.1;
+            currentRotation.y += (targetRotation.y - currentRotation.y) * 0.1;
+            
+            // Auto rotation
+            if (autoRotate && !isDragging) {
+                targetRotation.y += 0.003;
+                targetRotation.x = Math.sin(Date.now() * 0.0003) * 0.1;
             }
             
+            // Apply rotation
+            cubeGroup.rotation.x = currentRotation.x;
+            cubeGroup.rotation.y = currentRotation.y;
+            
+            // Render
             renderer.render(scene, camera);
         }
         
