@@ -757,18 +757,58 @@
         function onTouchStart(event) {
             event.preventDefault();
             const touch = event.touches[0];
-            onMouseDown({ clientX: touch.clientX, clientY: touch.clientY });
+            isDragging = true;
+            previousMousePosition = {
+                x: touch.clientX,
+                y: touch.clientY
+            };
+            
+            // Verificar si el toque está sobre una celda
+            mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(cells);
+            
+            if (intersects.length > 0 && !gameOver) {
+                const cell = intersects[0].object;
+                const { x, y, z, occupied } = cell.userData;
+                
+                if (!occupied) {
+                    makeMove(cell, x, y, z);
+                }
+            }
         }
         
         function onTouchMove(event) {
             event.preventDefault();
+            if (!isDragging) return;
+            
             const touch = event.touches[0];
-            onMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
+            const deltaMove = {
+                x: touch.clientX - previousMousePosition.x,
+                y: touch.clientY - previousMousePosition.y
+            };
+            
+            // Rotación más suave y responsiva
+            targetRotation.y += deltaMove.x * 0.02;
+            targetRotation.x += deltaMove.y * 0.02;
+            
+            // Limitar la rotación vertical para evitar que el cubo se voltee
+            targetRotation.x = Math.max(-Math.PI/3, Math.min(Math.PI/3, targetRotation.x));
+            
+            previousMousePosition = {
+                x: touch.clientX,
+                y: touch.clientY
+            };
+            
+            // Actualizar el cursor
+            document.body.style.cursor = 'grabbing';
         }
         
         function onTouchEnd(event) {
             event.preventDefault();
-            onMouseUp();
+            isDragging = false;
+            document.body.style.cursor = 'grab';
         }
         
         function makeMove(cell, x, y, z) {
@@ -983,21 +1023,22 @@
         function animate() {
             requestAnimationFrame(animate);
             
-            // Smooth rotation
-            currentRotation.x += (targetRotation.x - currentRotation.x) * 0.1;
-            currentRotation.y += (targetRotation.y - currentRotation.y) * 0.1;
+            // Rotación más suave con interpolación
+            const rotationSpeed = 0.1;
+            currentRotation.x += (targetRotation.x - currentRotation.x) * rotationSpeed;
+            currentRotation.y += (targetRotation.y - currentRotation.y) * rotationSpeed;
             
-            // Auto rotation
+            // Auto rotación más suave
             if (autoRotate && !isDragging) {
-                targetRotation.y += 0.003;
-                targetRotation.x = Math.sin(Date.now() * 0.0003) * 0.1;
+                targetRotation.y += 0.002;
+                targetRotation.x = Math.sin(Date.now() * 0.0002) * 0.1;
             }
             
-            // Apply rotation
+            // Aplicar rotación con suavizado
             cubeGroup.rotation.x = currentRotation.x;
             cubeGroup.rotation.y = currentRotation.y;
             
-            // Render
+            // Renderizar
             renderer.render(scene, camera);
         }
         
