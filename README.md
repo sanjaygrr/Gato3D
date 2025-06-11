@@ -60,7 +60,7 @@ Un juego de Tic-Tac-Toe (Tres en Línea) en 3D con una interfaz moderna y efecto
 
 1. Clona este repositorio:
 ```bash
-git clone [URL del repositorio]
+git clone https://github.com/sanjaygrr/Gato3D
 ```
 
 2. Abre el archivo `index.html` en tu navegador
@@ -76,3 +76,4 @@ Las contribuciones son bienvenidas. Por favor, abre un issue para discutir los c
 ## 🙏 Créditos
 
 Desarrollado con ❤️ usando Three.js 
+sanjaygrr
